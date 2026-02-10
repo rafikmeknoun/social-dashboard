@@ -1,0 +1,116 @@
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: social_dashboard_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: social_dashboard
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_PASSWORD: db_password
+      MYSQL_USER: dashboard_user
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - social_dashboard_network
+
+  # PHP-FPM for Laravel
+  php:
+    build:
+      context: ./backend
+      dockerfile: ../docker/php/Dockerfile
+    container_name: social_dashboard_php
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www/html
+    working_dir: /var/www/html
+    networks:
+      - social_dashboard_network
+    depends_on:
+      - db
+      - redis
+  # Nginx Web Server
+  nginx:
+    image: nginx:alpine
+    container_name: social_dashboard_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend:/var/www/html
+      - ./frontend/dist:/var/www/html/public/frontend
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./docker/ssl:/etc/nginx/ssl
+    networks:
+      - social_dashboard_network
+    depends_on:
+      - php
+
+  # Redis for caching and queues
+  redis:
+    image: redis:alpine
+    container_name: social_dashboard_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - social_dashboard_network
+
+  # Node.js for Vue.js development (optional, for dev)
+  node:
+    image: node:20-alpine
+    container_name: social_dashboard_node
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "5173:5173"
+    networks:
+      - social_dashboard_network
+
+  # Scheduler for Laravel cron jobs
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: ../docker/php/Dockerfile
+    container_name: social_dashboard_scheduler
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: [ "php", "artisan", "schedule:work" ]
+    networks:
+      - social_dashboard_network
+    depends_on:
+      - db
+      - redis
+
+  # Queue worker for Laravel
+  queue:
+    build:
+      context: ./backend
+      dockerfile: ../docker/php/Dockerfile
+    container_name: social_dashboard_queue
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: [ "php", "artisan", "queue:work", "--sleep=3", "--tries=3" ]
+    networks:
+      - social_dashboard_network
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  db_data:
+
+networks:
+  social_dashboard_network:
+    driver: bridge

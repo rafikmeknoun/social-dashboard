@@ -1,0 +1,48 @@
+/* Custom scrollbar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Platform badge colors */
+.platform-facebook {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.platform-instagram {
+  @apply bg-pink-100 text-pink-800;
+}
+
+.platform-tiktok {
+  @apply bg-gray-100 text-gray-800;
+}
+
+.platform-youtube {
+  @apply bg-red-100 text-red-800;
+}
